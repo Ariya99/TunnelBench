@@ -1,0 +1,20 @@
+{
+  "hetzner-fsn1": {
+    "name": "hetzner-fsn1",
+    "host": "198.51.100.25",
+    "port": 22,
+    "user": "root",
+    "auth_method": "key",
+    "key_path": "~/.ssh/id_ed25519",
+    "tags": ["germany", "hetzner", "prod"]
+  },
+  "ovh-gra": {
+    "name": "ovh-gra",
+    "host": "203.0.113.10",
+    "port": 2222,
+    "user": "ubuntu",
+    "auth_method": "agent",
+    "key_path": null,
+    "tags": ["france", "ovh", "staging"]
+  }
+}

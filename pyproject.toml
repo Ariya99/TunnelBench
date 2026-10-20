@@ -1,0 +1,75 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "tunnelbench"
+version = "0.1.0"
+description = "Diagnostic, benchmarking, and decision-support CLI tool for evaluating foreign VPS reachability, VPN/tunnel technologies, and target service accessibility under restrictive network environments."
+readme = "README.md"
+requires-python = ">=3.11"
+license = {text = "MIT"}
+authors = [
+    {name = "Ariya99"}
+]
+keywords = [
+    "network-measurement",
+    "censorship-circumvention",
+    "benchmarking",
+    "vpn",
+    "vless-reality",
+    "xray-core",
+    "iran",
+    "diagnostics"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Intended Audience :: System Administrators",
+    "Intended Audience :: Telecommunications Industry",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Networking",
+    "Topic :: System :: Benchmark",
+    "Topic :: Security"
+]
+
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-cov>=4.1.0",
+    "ruff>=0.3.0",
+    "mypy>=1.9.0"
+]
+
+[project.scripts]
+tunnelbench = "tunnelbench.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/Ariya99/TunnelBench"
+Repository = "https://github.com/Ariya99/TunnelBench.git"
+Issues = "https://github.com/Ariya99/TunnelBench/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --strict-markers"
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+check_untyped_defs = true
