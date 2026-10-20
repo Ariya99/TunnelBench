@@ -35,10 +35,10 @@ MIIEowIBAAKCAQEA0Y1+exampleFakeKeyPayloadForTestingOnlyDoNotUse==
 
     def test_redact_connection_uris(self):
         uris = [
-            "vless://9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d@198.51.100.1:443?security=reality#Node",
-            "vmess://eyJhZGQiOiIxOTguNTEuMTAwLjEiLCJwb3J0IjoiNDQzIn0=",
-            "ss://YWVzLTI1Ni1nY206cGFzc3dvcmRAMTk4LjUxLjEwMC4xOjgzODg=#Node",
-            "trojan://password123@198.51.100.1:443#Node",
+            "vless://9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d@127.0.0.1:443?security=reality#Node",
+            "vmess://eyJhZGQiOiIxMjcuMC4wLjEiLCJwb3J0IjoiNDQzIn0=",
+            "ss://YWVzLTI1Ni1nY206cGFzc3dvcmRAMTI3LjAuMC4xOjgzODg=#Node",
+            "trojan://password123@127.0.0.1:443#Node",
         ]
         for u in uris:
             res = redact(f"Connection URL: {u}")

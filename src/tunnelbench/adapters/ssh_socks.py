@@ -22,10 +22,11 @@ class SSHSocksAdapter(BaseAdapter):
 
     name = "ssh-socks"
     display_name = "SSH Dynamic SOCKS5 Proxy"
-    status = AdapterStatus.SUPPORTED
+    status = AdapterStatus.EXPERIMENTAL
     description = (
         "Zero-installation diagnostic baseline using OpenSSH -D forwarding. "
-        "Useful for establishing baseline performance and failure comparisons."
+        "Useful for establishing baseline performance and failure comparisons. "
+        "Requires verification on live target infrastructure."
     )
 
     def check_prerequisites(self, profile: VPSProfile, ssh: SSHClient) -> List[ProbeResult]:

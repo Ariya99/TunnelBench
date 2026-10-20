@@ -12,7 +12,7 @@ class TestBaseline(unittest.TestCase):
     def setUp(self):
         self.profile = VPSProfile(
             name="test-vps",
-            host="198.51.100.1",
+            host="127.0.0.1",
             port=22,
             user="root",
             tags=["unit-test"],

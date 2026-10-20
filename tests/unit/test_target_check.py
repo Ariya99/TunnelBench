@@ -46,6 +46,42 @@ class TestTargetCheck(unittest.TestCase):
             self.assertEqual(probe.status, CheckStatus.FAIL)
             self.assertEqual(probe.error_code, ErrorCode.HTTP_GEO_RESTRICTED)
 
+    def test_gemini_api_generic_403_not_misclassified_as_geo(self):
+        """Generic 403 without location evidence must not be classified as geo-restricted."""
+        validator = TargetServiceValidator()
+
+        fake_body = b'{\n  "error": {\n    "code": 403,\n    "message": "Custom policy blocked.",\n    "status": "UNKNOWN"\n  }\n}'
+        http_error = urllib.error.HTTPError(
+            url="https://generativelanguage.googleapis.com",
+            code=403,
+            msg="Forbidden",
+            hdrs=MagicMock(),
+            fp=MagicMock(read=lambda: fake_body),
+        )
+
+        with patch("urllib.request.OpenerDirector.open", side_effect=http_error):
+            probe = validator.check_gemini_api()
+            self.assertEqual(probe.status, CheckStatus.FAIL)
+            self.assertEqual(probe.error_code, ErrorCode.UNKNOWN_ERROR)
+            self.assertNotEqual(probe.error_code, ErrorCode.HTTP_GEO_RESTRICTED)
+
+    def test_gemini_api_permission_403(self):
+        validator = TargetServiceValidator()
+
+        fake_body = b'{\n  "error": {\n    "code": 403,\n    "message": "Caller lacks required permission.",\n    "status": "PERMISSION_DENIED"\n  }\n}'
+        http_error = urllib.error.HTTPError(
+            url="https://generativelanguage.googleapis.com",
+            code=403,
+            msg="Forbidden",
+            hdrs=MagicMock(),
+            fp=MagicMock(read=lambda: fake_body),
+        )
+
+        with patch("urllib.request.OpenerDirector.open", side_effect=http_error):
+            probe = validator.check_gemini_api()
+            self.assertEqual(probe.status, CheckStatus.FAIL)
+            self.assertEqual(probe.error_code, ErrorCode.HTTP_AUTH_REQUIRED)
+
     def test_gemini_api_network_timeout(self):
         validator = TargetServiceValidator()
 

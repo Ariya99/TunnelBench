@@ -12,7 +12,7 @@ class TestXrayAdapter(unittest.TestCase):
     def setUp(self):
         self.profile = VPSProfile(
             name="test-vps",
-            host="198.51.100.1",
+            host="127.0.0.1",
             port=22,
             user="root",
             tags=["unit-test"],
@@ -21,7 +21,7 @@ class TestXrayAdapter(unittest.TestCase):
     def test_adapter_metadata(self):
         adapter = XrayRealityAdapter()
         self.assertEqual(adapter.name, "xray-reality")
-        self.assertEqual(adapter.status.value, "SUPPORTED")
+        self.assertEqual(adapter.status.value, "EXPERIMENTAL")
 
     def test_build_deployment_plan(self):
         adapter = XrayRealityAdapter()
@@ -31,6 +31,14 @@ class TestXrayAdapter(unittest.TestCase):
         self.assertEqual(plan.exposed_ports, [443])
         self.assertGreaterEqual(len(plan.actions), 5)
         self.assertIn("xray-core", plan.container_image or "")
+
+    def test_build_deployment_plan_invalid_inputs(self):
+        adapter = XrayRealityAdapter()
+        with self.assertRaises(ValueError):
+            adapter.build_deployment_plan(self.profile, {"port": 70000})
+
+        with self.assertRaises(ValueError):
+            adapter.build_deployment_plan(self.profile, {"sni": "bad hostname with spaces"})
 
     def test_require_user_approval_auto(self):
         adapter = XrayRealityAdapter()

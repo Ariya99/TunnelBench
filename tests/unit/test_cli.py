@@ -41,14 +41,14 @@ class TestCLI(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         output = buf.getvalue()
         self.assertIn("xray-reality", output)
-        self.assertIn("SUPPORTED", output)
+        self.assertIn("EXPERIMENTAL", output)
 
     def test_cli_vps_lifecycle(self):
         with patch.dict(os.environ, {"TUNNELBENCH_CONFIG_DIR": str(self.temp_dir / "config")}):
             # 1. Add
             buf = io.StringIO()
             with redirect_stdout(buf):
-                rc_add = main(["vps", "add", "--name", "cli-test", "--host", "198.51.100.10"])
+                rc_add = main(["vps", "add", "--name", "cli-test", "--host", "10.0.0.10"])
             self.assertEqual(rc_add, 0)
 
             # 2. List
@@ -63,7 +63,7 @@ class TestCLI(unittest.TestCase):
             with redirect_stdout(buf):
                 rc_show = main(["vps", "show", "cli-test"])
             self.assertEqual(rc_show, 0)
-            self.assertIn("198.51.100.10", buf.getvalue())
+            self.assertIn("10.0.0.10", buf.getvalue())
 
             # 4. Remove
             buf = io.StringIO()

@@ -18,7 +18,7 @@ try:
         from tunnelbench.models import VPSProfile
         return VPSProfile(
             name="test-vps",
-            host="198.51.100.1",
+            host="127.0.0.1",
             port=22,
             user="root",
             auth_method="key",

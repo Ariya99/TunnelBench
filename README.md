@@ -13,8 +13,8 @@
 ### What TunnelBench Does:
 * **Separates Infrastructure from Reachability:** Distinguishes whether your foreign VPS is healthy from whether an access ISP (e.g., Irancell, MCI, Shatel) allows packets to reach it.
 * **Probes Filtering Mechanics:** Characterizes specific censorship mechanisms: DNS bogon injection (`10.10.34.0/24`), TCP connection resets/timeouts, and TLS SNI handshake disruptions.
-* **Orchestrates Reviewed Tunnel Adapters:** Safely deploys and manages state-of-the-art tunnel stacks (starting with **Xray-core VLESS-REALITY-Vision**) with strict user approval gates.
-* **Validates Target Workloads:** Specifically tests whether target platforms like **Google AI Studio** and **Gemini API** are reachable, distinguishing transport blocks from regional restrictions (`HTTP 403`) and authentication states (`HTTP 400`/`401`).
+* **Orchestrates Reviewed Tunnel Adapters:** Deploys and manages tunnel stacks (starting with **Xray-core VLESS-REALITY-Vision**) with strict user approval gates and least-privilege Docker parameters.
+* **Validates Target Workloads:** Specifically tests whether target platforms like **Google AI Studio** and **Gemini API** are reachable, distinguishing transport reachability from regional restrictions (`HTTP 403` geo block) and authentication states (`HTTP 400`/`401`).
 * **Generates Reproducible Data:** Outputs standardized JSON (`1.0.0`) and row-per-attempt CSV reports for longitudinal analysis.
 
 ### What TunnelBench Does NOT Do:
@@ -38,14 +38,19 @@
 
 ## 📋 Protocol Adapter Status
 
-| Adapter | Status | Default Mode | Censorship Resistance Rating | Description |
+| Adapter | Status | Implementation State | Default Mode | Description |
 | :--- | :--- | :--- | :--- | :--- |
-| **`xray-reality`** | `SUPPORTED` | Docker | **High** | VLESS + REALITY + XTLS-Vision. Masquerades as legitimate TLS to decoy domains without self-signed certs. |
-| **`ssh-socks`** | `SUPPORTED` | Native | **Low - Med** | OpenSSH dynamic application-level SOCKS5 proxy baseline. |
-| **`trojan`** | `PLANNED` | Docker | **Medium** | Masquerades as HTTPS. Requires dedicated domain and TLS cert. |
-| **`shadowsocks-2022`** | `EXPERIMENTAL` | Docker | **Medium - Low** | Modern AEAD cipher stack. Susceptible to UDP dropping on mobile ISPs. |
-| **`wireguard`** | `EXPERIMENTAL` | Docker/Kernel | **Very Poor** | Raw WireGuard UDP handshake headers (`0x01...`) are identified and dropped within milliseconds by Iranian DPI. Included as a contrast baseline. |
-| **`openvpn`** | `DEPRECATED` | Docker | **Very Poor** | Static handshake signatures trivially flagged and filtered. |
+| **`xray-reality`** | `EXPERIMENTAL` | Implemented (v0.1.0) | Docker (Pinned) | VLESS + REALITY + XTLS-Vision. Masquerades as legitimate TLS to decoy domains without self-signed certs. Tested with unit mocks; requires live-network field validation. |
+| **`ssh-socks`** | `EXPERIMENTAL` | Implemented (v0.1.0) | Native (OpenSSH) | OpenSSH dynamic application-level SOCKS5 proxy baseline. Tested with unit mocks; requires live-network field validation. |
+| **`trojan`** | `PLANNED` | Not Implemented | Docker | Masquerades as HTTPS. Requires dedicated domain and TLS cert. |
+| **`shadowsocks-2022`** | `PLANNED` | Not Implemented | Docker | Modern AEAD cipher stack. |
+| **`wireguard`** | `PLANNED` | Not Implemented | Docker / Kernel | Planned as a diagnostic contrast probe. |
+| **`openvpn`** | `PLANNED` | Not Implemented | Docker | Planned as a diagnostic contrast probe. |
+
+*Definitions:*
+- **`PLANNED`**: Researched and specified, but not yet implemented in source code.
+- **`EXPERIMENTAL`**: Implemented in source code and unit-tested with mocks, but pending verification on live foreign VPS infrastructure and Iranian access networks.
+- **`SUPPORTED`**: Passes all four criteria: full implementation, unit tests, live VPS verification, and field validation on active restricted networks.
 
 ---
 
@@ -82,7 +87,7 @@ tunnelbench vps add \
   --tag germany --tag hetzner
 ```
 
-List registered profiles (secrets and IPs safely formatted):
+List registered profiles:
 ```bash
 tunnelbench vps list
 ```

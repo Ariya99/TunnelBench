@@ -5,7 +5,9 @@ Deploys official Xray-core in Docker with REALITY disguise against state DPI.
 
 from __future__ import annotations
 
+import base64
 import json
+import re
 import secrets
 import time
 import uuid
@@ -22,17 +24,20 @@ DEFAULT_CONTAINER_NAME = "tunnelbench-xray-reality"
 DEFAULT_CONFIG_PATH = "/etc/tunnelbench/xray-reality.json"
 DEFAULT_DECOY_DEST = "www.microsoft.com:443"
 DEFAULT_DECOY_SNI = "www.microsoft.com"
+_HOSTNAME_REGEX = re.compile(
+    r"^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"
+)
 
 
 class XrayRealityAdapter(BaseAdapter):
-    """Production-grade adapter for Xray-core VLESS-REALITY."""
+    """Adapter for Xray-core VLESS-REALITY."""
 
     name = "xray-reality"
     display_name = "Xray VLESS-REALITY (Vision)"
-    status = AdapterStatus.SUPPORTED
+    status = AdapterStatus.EXPERIMENTAL
     description = (
         "Zero-copy splice TLS impersonation proxying to legitimate decoy domains. "
-        "High resilience against DPI and SNI filtering."
+        "Requires verification on live target infrastructure."
     )
 
     def check_prerequisites(self, profile: VPSProfile, ssh: SSHClient) -> List[ProbeResult]:
@@ -95,7 +100,13 @@ class XrayRealityAdapter(BaseAdapter):
     ) -> DeploymentPlan:
         opts = options or {}
         port = int(opts.get("port", 443))
+        if not (1 <= port <= 65535):
+            raise ValueError(f"Invalid port {port}. Must be between 1 and 65535.")
+
         decoy_sni = opts.get("sni", DEFAULT_DECOY_SNI)
+        if not _HOSTNAME_REGEX.match(decoy_sni):
+            raise ValueError(f"Invalid decoy SNI '{decoy_sni}'. Must be a valid hostname.")
+
         decoy_dest = opts.get("dest", f"{decoy_sni}:443")
         image = opts.get("image", DEFAULT_XRAY_IMAGE)
 
@@ -104,7 +115,7 @@ class XrayRealityAdapter(BaseAdapter):
             f"Create configuration directory: /etc/tunnelbench with 0700 permissions",
             f"Generate secure VLESS UUID, ShortId, and Curve25519 REALITY keypair",
             f"Write server config to {DEFAULT_CONFIG_PATH} with 0600 permissions",
-            f"Start Docker container '{DEFAULT_CONTAINER_NAME}' on host network (port {port})",
+            f"Start Docker container '{DEFAULT_CONTAINER_NAME}' (-p {port}:{port}/tcp, dropped capabilities)",
             f"Verify service socket listening on port {port}/tcp",
         ]
 
@@ -174,11 +185,12 @@ class XrayRealityAdapter(BaseAdapter):
             "outbounds": [{"protocol": "freedom"}],
         }
 
-        # 3. Create config dir and file
+        # 3. Create config dir and file safely using base64 encoding
         cfg_json = json.dumps(config, indent=2)
+        b64_cfg = base64.b64encode(cfg_json.encode("utf-8")).decode("ascii")
         setup_cmd = (
             f"mkdir -p /etc/tunnelbench && chmod 700 /etc/tunnelbench && "
-            f"cat << 'EOF' > {DEFAULT_CONFIG_PATH}\n{cfg_json}\nEOF\n"
+            f"echo '{b64_cfg}' | base64 -d > {DEFAULT_CONFIG_PATH} && "
             f"chmod 600 {DEFAULT_CONFIG_PATH}"
         )
         res_cfg = ssh.run_command(setup_cmd)
@@ -199,12 +211,17 @@ class XrayRealityAdapter(BaseAdapter):
         ssh.run_command(f"docker stop {DEFAULT_CONTAINER_NAME} > /dev/null 2>&1 || true")
         ssh.run_command(f"docker rm {DEFAULT_CONTAINER_NAME} > /dev/null 2>&1 || true")
 
-        # 5. Start container
+        # 5. Start container with least privileges and bounded resources
         start_cmd = (
             f"docker run -d "
             f"--name {DEFAULT_CONTAINER_NAME} "
             f"--restart unless-stopped "
-            f"--network host "
+            f"-p {port}:{port}/tcp "
+            f"--cap-drop=ALL "
+            f"--cap-add=NET_BIND_SERVICE "
+            f"--security-opt no-new-privileges:true "
+            f"--memory=512m "
+            f"--cpus=1.0 "
             f"-v {DEFAULT_CONFIG_PATH}:/etc/xray/config.json:ro "
             f"{plan.container_image} run -config /etc/xray/config.json"
         )

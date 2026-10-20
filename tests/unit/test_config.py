@@ -21,13 +21,13 @@ class TestConfig(unittest.TestCase):
     def test_add_and_get_profile(self):
         prof = self.mgr.add_profile(
             name="hetzner-fsn",
-            host="198.51.100.10",
+            host="10.0.0.10",
             port=22,
             user="root",
             tags=["germany", "hetzner"],
         )
         self.assertEqual(prof.name, "hetzner-fsn")
-        self.assertEqual(prof.host, "198.51.100.10")
+        self.assertEqual(prof.host, "10.0.0.10")
 
         retrieved = self.mgr.get_profile("hetzner-fsn")
         self.assertEqual(retrieved.name, prof.name)
@@ -36,17 +36,17 @@ class TestConfig(unittest.TestCase):
 
     def test_invalid_profile_inputs(self):
         with self.assertRaises(ConfigError):
-            self.mgr.add_profile(name="invalid name", host="198.51.100.1")
+            self.mgr.add_profile(name="invalid name", host="10.0.0.1")
 
         with self.assertRaises(ConfigError):
-            self.mgr.add_profile(name="bad-port", host="198.51.100.1", port=70000)
+            self.mgr.add_profile(name="bad-port", host="10.0.0.1", port=70000)
 
         with self.assertRaises(ConfigError):
             self.mgr.add_profile(name="bad-host", host="not an ip or host!")
 
     def test_profile_list_and_remove(self):
-        self.mgr.add_profile(name="p1", host="198.51.100.1")
-        self.mgr.add_profile(name="p2", host="198.51.100.2")
+        self.mgr.add_profile(name="p1", host="10.0.0.1")
+        self.mgr.add_profile(name="p2", host="10.0.0.2")
 
         profiles = self.mgr.list_profiles()
         self.assertEqual(len(profiles), 2)
@@ -58,7 +58,7 @@ class TestConfig(unittest.TestCase):
             self.mgr.get_profile("p1")
 
     def test_profile_file_permissions(self):
-        self.mgr.add_profile(name="secure-prof", host="198.51.100.1")
+        self.mgr.add_profile(name="secure-prof", host="10.0.0.1")
         stat_mode = self.mgr.profiles_file.stat().st_mode & 0o777
         self.assertEqual(stat_mode, 0o600)
 

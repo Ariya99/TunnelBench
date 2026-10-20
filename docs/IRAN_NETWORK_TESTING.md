@@ -1,6 +1,6 @@
 # Testing from Iranian Networks: Methodological Guide
 
-**Target Audience:** Network Engineers, System Administrators, and Researchers operating within Iranian retail and enterprise networks.
+**Target Audience:** Network Engineers, System Administrators, and Researchers evaluating reachability from Iranian retail and enterprise networks.
 
 ---
 
@@ -19,38 +19,44 @@ All measurements in TunnelBench are classified along two orthogonal axes:
 
 ## 2. Iranian ISP Landscape & Diversity
 
-Filtering behavior is not uniform across Iran. When conducting tests with TunnelBench, always record your access network context:
+Filtering behavior is not uniform across Iran. It varies by operator type, upstream transit paths, province, and time of day. When conducting tests with TunnelBench, always record your access network context:
 
-| ISP / Operator | Type | Typical Characteristics | Known Filtering Patterns |
+| ISP / Operator | Access Type | Network Profile | Reported Observations & Test Hypotheses |
 | :--- | :--- | :--- | :--- |
-| **MCI (Hamrah-e Aval)** | Mobile | High subscriber volume, nationwide CGNAT | Aggressive UDP dropping, rapid SNI throttling, mobile-specific blackouts during unrest. |
-| **Irancell (MTN)** | Mobile | Modern IPv6/IPv4 dual-stack, widespread | Active probing on unknown TLS ports, heuristic rate limiting on sustained single-stream connections. |
-| **Rightel** | Mobile | Smaller mobile footprint | Variable routing policies, often mirrors MCI baseline. |
-| **Mokhaberat (TCI)** | Fixed-line DSL/FTTH | Incumbent state telecom, high latency | Heavy DNS redirection to bogon IPs (`10.10.34.35`), deep packet inspection at provincial gateways. |
-| **Shatel / Pars Online / Asiatech** | Fixed-line Private ISPs | Commercial DSL, VDSL, FTTH | Lower internal latency, but strict upstream TIC filtering. Occasionally higher bandwidth allowances before throttling kicks in. |
-| **Zitel** | Fixed Wireless (TD-LTE) | Urban fixed wireless | Aggressive traffic shaping during peak evening hours (19:00 - 23:30). |
+| **MCI (Hamrah-e Aval)** | Mobile | Large mobile subscriber base, CGNAT | High UDP packet drop rates reported during peak hours; SNI-targeted throttling observed in OONI data. |
+| **Irancell (MTN)** | Mobile | Dual-stack IPv6/IPv4, widespread coverage | Active probing on unknown TLS endpoints reported; heuristic throttling on single-flow sustained throughput. |
+| **Rightel** | Mobile | Third mobile carrier footprint | Variable routing; generally follows national TIC upstream filtering baseline. |
+| **Mokhaberat (TCI)** | Fixed-line DSL/FTTH | Incumbent fixed-line carrier | High rate of DNS redirection to bogon addresses (`10.10.34.35` / `10.10.34.0/24`) documented in OONI telemetry. |
+| **Shatel / Pars Online / Asiatech** | Fixed-line Private ISPs | Commercial ADSL, VDSL, FTTH | Lower domestic latency; upstream transit routes via TIC gateway middleboxes. |
+| **Zitel** | Fixed Wireless (TD-LTE) | Urban fixed wireless | Bandwidth shaping and elevated latency reported during evening peak usage windows (19:00 - 23:30). |
+
+*Note:* These patterns represent empirical hypotheses to measure, not guaranteed permanent behaviors across every individual connection.
 
 ---
 
 ## 3. Step-by-Step Testing Procedure
 
-### Step 1: Pre-Test Documentation
-Before running tests, identify your local network context. Run:
+### Step 1: Document Your Environment
+Identify and record your network context. Run:
 ```bash
-tunnelbench client-check --isp "Irancell" --connection-type "mobile" --region "Tehran"
+tunnelbench client-check \
+  --profile <profile-name> \
+  --isp "Irancell" \
+  --connection-type "mobile" \
+  --region "Tehran"
 ```
-*Note:* TunnelBench does not attempt to guess or expose your exact geo-location; user tags are purely for your own local report comparative analysis.
+*Note:* TunnelBench does not attempt to infer or expose your exact location; tags are stored locally for comparison.
 
 ### Step 2: Test Direct Reachability (Phase 6.1 - 6.3)
 1. **DNS Integrity Check:**
    - Resolve your VPS hostname (if using FQDN) through local DNS.
    - If the returned IP matches `10.10.34.x` or `127.0.0.1`, DNS tampering is confirmed.
-   - Recommended remedy: Use direct IP or DNS over HTTPS (DoH) via trusted clean resolvers.
+   - Mitigation: Use direct IP or DNS over HTTPS (DoH) via verified clean resolvers.
 2. **TCP Port Reachability:**
    - Send TCP SYN packets to the destination port (e.g., 443, 8443, 22).
    - If `SYN-ACK` returns in normal RTT (typically 80–180ms to Europe), transport is open.
-   - If connections time out consistently, the destination IP or port is blocked by TIC/ISP routing tables.
-   - If a `RST` is returned in < 25ms, local gateway DPI is injecting TCP resets.
+   - If connections time out consistently, the destination IP or port is blocked or dropped upstream.
+   - If a `RST` is returned in < 30ms, gateway DPI injection is the likely cause.
 
 ### Step 3: Validate Protocol Handshake (Phase 6.4)
 - Initiate the TLS handshake using the configured decoy domain (for VLESS-REALITY).
@@ -60,7 +66,7 @@ tunnelbench client-check --isp "Irancell" --connection-type "mobile" --region "T
 ### Step 4: Validate In-Tunnel Forwarding (Phase 6.5 - 6.7)
 - Bind the local proxy client (e.g., SOCKS5 on `127.0.0.1:10808` or HTTP on `127.0.0.1:10809`).
 - Execute HTTP `GET` requests to a standard public baseline: `https://www.cloudflare.com/cdn-cgi/trace` or `https://httpbin.org/ip`.
-- Verify the outbound IP matches your foreign VPS IP, not your Iranian ISP IP.
+- Verify the outbound IP matches your foreign VPS IP, not your domestic ISP IP.
 
 ### Step 5: Validate Target Service (Phase 7: Google AI Studio / Gemini)
 - Execute `tunnelbench target-check --target gemini --proxy socks5://127.0.0.1:10808`
@@ -68,9 +74,9 @@ tunnelbench client-check --isp "Irancell" --connection-type "mobile" --region "T
 - Verify that `aistudio.google.com` returns HTTP 200/302.
 
 ### Step 6: Longitudinal Stability Testing (Phase 8)
-- Run repeated tests over 10 to 30 iterations spaced over 10 minutes.
+- Run repeated tests over 10 to 30 iterations spaced across different hours.
 - Record the **Survival Rate**: What percentage of attempts succeed without interruption?
-- Record **Jitter and Throttling**: Does latency stay consistent, or does throughput degrade after 50MB of data transfer?
+- Record **Jitter and Throttling**: Does latency stay consistent, or does throughput degrade after sustained transfer?
 
 ---
 

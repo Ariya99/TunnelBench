@@ -22,32 +22,40 @@ class TestClientValidation(unittest.TestCase):
     def test_normal_dns_resolution(self):
         validator = ClientNetworkValidator(target_host="clean.example.com", target_port=443)
 
-        with patch("socket.gethostbyname", return_value="198.51.100.1"):
+        with patch("socket.gethostbyname", return_value="127.0.0.1"):
+            probe, ip = validator.probe_dns_resolution()
+            self.assertEqual(probe.status, CheckStatus.FAIL)
+            self.assertEqual(probe.error_code, ErrorCode.DNS_BOGON_INJECTED)
+
+    def test_clean_public_dns_resolution(self):
+        validator = ClientNetworkValidator(target_host="clean.example.com", target_port=443)
+
+        with patch("socket.gethostbyname", return_value="93.184.216.34"):
             probe, ip = validator.probe_dns_resolution()
             self.assertEqual(probe.status, CheckStatus.PASS)
-            self.assertEqual(ip, "198.51.100.1")
+            self.assertEqual(ip, "93.184.216.34")
 
     def test_tcp_connect_timeout(self):
-        validator = ClientNetworkValidator(target_host="198.51.100.1", target_port=443)
+        validator = ClientNetworkValidator(target_host="127.0.0.1", target_port=443)
 
         with patch("socket.socket.connect", side_effect=socket.timeout):
-            probe, connected = validator.probe_tcp_connect("198.51.100.1")
+            probe, connected = validator.probe_tcp_connect("127.0.0.1")
             self.assertEqual(probe.status, CheckStatus.FAIL)
             self.assertEqual(probe.error_code, ErrorCode.TCP_TIMEOUT)
             self.assertFalse(connected)
 
     def test_tcp_connect_reset(self):
-        validator = ClientNetworkValidator(target_host="198.51.100.1", target_port=443)
+        validator = ClientNetworkValidator(target_host="127.0.0.1", target_port=443)
 
         with patch("socket.socket.connect", side_effect=ConnectionRefusedError):
-            probe, connected = validator.probe_tcp_connect("198.51.100.1")
+            probe, connected = validator.probe_tcp_connect("127.0.0.1")
             self.assertEqual(probe.status, CheckStatus.FAIL)
             self.assertEqual(probe.error_code, ErrorCode.TCP_RESET)
             self.assertFalse(connected)
 
     def test_client_run_all(self):
         validator = ClientNetworkValidator(
-            target_host="198.51.100.1",
+            target_host="127.0.0.1",
             target_port=443,
             isp="Irancell",
             connection_type="mobile",
@@ -61,7 +69,7 @@ class TestClientValidation(unittest.TestCase):
             from tunnelbench.models import ProbeResult
             mock_dns.return_value = (
                 ProbeResult("dns", "DNS", "dns", CheckStatus.PASS, duration_ms=10.0),
-                "198.51.100.1",
+                "127.0.0.1",
             )
             mock_tcp.return_value = (
                 ProbeResult("tcp", "TCP", "tcp", CheckStatus.PASS, duration_ms=80.0),

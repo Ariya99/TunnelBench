@@ -102,8 +102,9 @@ class TargetServiceValidator:
                     },
                 )
             elif e.code == 403:
-                # Distinguish geographic block from auth block
-                if "location" in error_body.lower() or "region" in error_body.lower():
+                # Distinguish explicit geographic restriction from generic 403 responses
+                err_lower = error_body.lower()
+                if "location is not supported" in err_lower or "user_location_not_supported" in err_lower:
                     return ProbeResult(
                         probe_id="target_gemini_api",
                         name="Google Gemini API Gateway Reachability",
@@ -112,19 +113,31 @@ class TargetServiceValidator:
                         target=GEMINI_API_ENDPOINT,
                         duration_ms=duration,
                         error_code=ErrorCode.HTTP_GEO_RESTRICTED,
-                        error_message="HTTP 403 Forbidden: Google AI Studio is unavailable in this VPS egress region.",
+                        error_message="HTTP 403 Forbidden: Google AI Studio reports user location is not supported.",
                         details={"response_snippet": redacted_body[:200]},
                     )
-                return ProbeResult(
-                    probe_id="target_gemini_api",
-                    name="Google Gemini API Gateway Reachability",
-                    category="api",
-                    status=CheckStatus.FAIL,
-                    target=GEMINI_API_ENDPOINT,
-                    duration_ms=duration,
-                    error_code=ErrorCode.HTTP_AUTH_REQUIRED,
-                    error_message=f"HTTP 403 Forbidden: {redacted_body[:200]}",
-                )
+                elif "permission" in err_lower or "auth" in err_lower or "credential" in err_lower:
+                    return ProbeResult(
+                        probe_id="target_gemini_api",
+                        name="Google Gemini API Gateway Reachability",
+                        category="api",
+                        status=CheckStatus.FAIL,
+                        target=GEMINI_API_ENDPOINT,
+                        duration_ms=duration,
+                        error_code=ErrorCode.HTTP_AUTH_REQUIRED,
+                        error_message=f"HTTP 403 Forbidden (Permission / Auth): {redacted_body[:200]}",
+                    )
+                else:
+                    return ProbeResult(
+                        probe_id="target_gemini_api",
+                        name="Google Gemini API Gateway Reachability",
+                        category="api",
+                        status=CheckStatus.FAIL,
+                        target=GEMINI_API_ENDPOINT,
+                        duration_ms=duration,
+                        error_code=ErrorCode.UNKNOWN_ERROR,
+                        error_message=f"HTTP 403 Forbidden (Unclassified Policy): {redacted_body[:200]}",
+                    )
             else:
                 return ProbeResult(
                     probe_id="target_gemini_api",

@@ -13,7 +13,7 @@ class TestSSHSecurity(unittest.TestCase):
     def setUp(self):
         self.profile = VPSProfile(
             name="test-vps",
-            host="198.51.100.1",
+            host="127.0.0.1",
             port=22,
             user="root",
             auth_method="key",
@@ -30,7 +30,7 @@ class TestSSHSecurity(unittest.TestCase):
         self.assertIn("BatchMode=yes", base_cmd)
         self.assertIn("-p", base_cmd)
         self.assertIn("22", base_cmd)
-        self.assertIn("root@198.51.100.1", base_cmd)
+        self.assertIn("root@127.0.0.1", base_cmd)
 
     @patch("subprocess.run")
     def test_ssh_host_key_mismatch_detection(self, mock_run):

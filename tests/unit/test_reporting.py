@@ -26,7 +26,7 @@ class TestReporting(unittest.TestCase):
             name="Probe 1",
             category="tcp",
             status=CheckStatus.PASS,
-            target="198.51.100.1:443",
+            target="127.0.0.1:443",
             duration_ms=45.2,
         )
         report = ReportModel(
